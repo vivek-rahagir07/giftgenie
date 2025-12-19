@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GiftGenie - AI Gift Finder</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Caveat:wght@400;700&family=Great+Vibes&family=Lobster&family=Montserrat:wght@400;700&family=Courier+Prime&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @keyframes shake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+        .animate-shake { animation: shake 0.1s infinite; }
+        @keyframes pop-in { 0% { opacity: 0; transform: scale(0.5) translateY(20px); } 70% { transform: scale(1.05); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        .animate-pop-in { animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in { animation: fade-in 0.3s ease-out; }
+        
+        body { font-family: 'Montserrat', sans-serif; }
+        .font-caveat { font-family: 'Caveat', cursive; }
+        .font-great-vibes { font-family: 'Great Vibes', cursive; }
+        .font-abril { font-family: 'Abril Fatface', cursive; }
+        .font-lobster { font-family: 'Lobster', cursive; }
+        .font-courier { font-family: 'Courier Prime', monospace; }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-24 md:pb-0">
+
+    <script>
+        const APP_LOGO_URL = "file:///Users/vivek/Desktop/Giftgenie/photo/logo.png"; 
+        const API_KEY = ""; 
+    </script>
+
+    <div id="pitch-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in hidden" onclick="closeModal(event)">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden transform transition-all scale-100" onclick="event.stopPropagation()">
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white relative">
+                <button onclick="closeModal()" class="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                <div class="flex items-center gap-2 mb-2 opacity-80 text-sm font-medium uppercase tracking-wider">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Gift Preview
+                </div>
+                <h2 id="modal-title" class="text-2xl font-bold">Gift Title</h2>
+            </div>
+            <div class="p-8 space-y-6">
+                <div>
+                    <h3 class="text-slate-500 font-bold text-xs uppercase tracking-wide mb-2">Why they'll love it</h3>
+                    <p id="modal-pitch" class="text-xl text-slate-800 font-serif leading-relaxed italic">Pitch goes here...</p>
+                </div>
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-100 flex gap-3">
+                    <i data-lucide="edit-3" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+                    <div>
+                        <h4 class="font-bold text-amber-800 text-sm">Personal Touch Idea</h4>
+                        <p id="modal-customization" class="text-amber-700 text-sm">Customization text...</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-2 flex-col sm:flex-row">
+                    <a id="modal-buy-link" href="#" target="_blank" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold text-center hover:bg-slate-800 transition-colors">Find Best Price</a>
+                    <button id="modal-share-btn" class="px-4 py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="share-2" class="w-5 h-5"></i> Share
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 hidden md:block">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div id="desktop-logo-container" class="bg-gradient-to-tr from-indigo-600 to-purple-600 p-2 rounded-full shadow-lg overflow-hidden w-10 h-10 flex-shrink-0 flex items-center justify-center">
+                    <i data-lucide="gift" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="font-bold text-xl tracking-tight">GiftGenie <span class="text-indigo-600 text-xs uppercase bg-indigo-50 px-1 py-0.5 rounded ml-1">Pro</span></span>
+            </div>
+            <div class="flex bg-slate-100 p-1 rounded-xl" id="desktop-nav">
+            </div>
+        </div>
+    </nav>
+
+    <div class="md:hidden sticky top-0 z-30 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div id="mobile-logo-container" class="bg-gradient-to-tr from-indigo-600 to-purple-600 p-1.5 rounded-full overflow-hidden w-8 h-8 flex-shrink-0 flex items-center justify-center">
+                <i data-lucide="gift" class="w-4 h-4 text-white"></i>
+            </div>
+            <span class="font-bold text-lg">GiftGenie</span>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+        
+        <div id="view-ideas" class="view-section">
+            <div class="flex flex-col lg:flex-row gap-8 items-start justify-center">
+                <div id="form-container" class="w-full lg:w-1/3 lg:max-w-md transition-all duration-500">
+                    <div class="bg-white rounded-2xl shadow-xl border border-indigo-50 overflow-hidden sticky top-24">
+                        <div id="form-header" class="bg-indigo-600 px-6 py-4 flex justify-between items-center transition-colors duration-500">
+                            <div class="flex items-center gap-2">
+                                <div id="form-logo-container" class="w-8 h-8 bg-white/20 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                    <i data-lucide="gift" class="w-5 h-5 text-white"></i>
+                                </div>
+                                <h2 id="form-title" class="text-white font-bold text-lg">Gift Genie</h2>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleCurrency()" id="currency-btn" class="text-xs bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded font-bold">INR</button>
+                                <button onclick="toggleForm()" id="expand-btn" class="text-white/80 hover:text-white text-xs uppercase font-bold tracking-wider hidden">Expand</button>
+                            </div>
+                        </div>
+                        
+                        <div id="gift-form-content" class="p-6 space-y-5">
+                            <div class="flex bg-slate-100 p-1 rounded-lg">
+                                <button onclick="setMode('personal')" id="mode-personal" class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all bg-white shadow text-indigo-600">Personal</button>
+                                <button onclick="setMode('corporate')" id="mode-corporate" class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500">Corporate</button>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Age</label>
+                                    <input type="number" id="input-age" placeholder="28" class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Relation</label>
+                                    <select id="input-rel" class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                                        <option>Friend</option><option>Partner</option><option>Parent</option><option>Sibling</option><option>Colleague</option><option>Boss</option><option>Client</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Occasion</label>
+                                <select id="input-occasion" class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                                    <option>Birthday</option><option>Anniversary</option><option>Wedding</option><option>Housewarming</option><option>Farewell</option><option>Diwali</option><option>Christmas</option><option>New Year</option><option>Secret Santa</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1"><i data-lucide="tag" class="w-3 h-3"></i> Personality</label>
+                                <div id="personality-tags" class="flex flex-wrap gap-2">
+                                </div>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1"><i data-lucide="sliders" class="w-3 h-3"></i> Budget</label>
+                                <select id="input-budget" class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                                </select>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Specific Interests</label>
+                                <textarea id="input-interests" placeholder="Coffee, Tech, Yoga..." class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none text-sm"></textarea>
+                            </div>
+
+                            <button onclick="generateGifts()" id="generate-btn" class="w-full text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600">
+                                <i data-lucide="sparkles" class="w-5 h-5"></i> Reveal Gift Ideas
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="results-area" class="w-full lg:w-2/3">
+                    <div id="loader" class="hidden flex flex-col items-center justify-center h-96 space-y-6 animate-pulse">
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full"></div>
+                            <i data-lucide="gift" class="w-16 h-16 text-indigo-600 relative z-10 animate-bounce"></i>
+                        </div>
+                        <div class="text-center space-y-2">
+                            <h3 class="text-xl font-bold text-slate-800">The Genie is thinking...</h3>
+                            <p class="text-slate-500">Matching personality traits with trends.</p>
+                        </div>
+                    </div>
+
+                    <div id="empty-state" class="bg-indigo-50/50 rounded-2xl p-8 border-2 border-dashed border-indigo-200 flex flex-col items-center justify-center text-center h-[500px]">
+                        <div class="bg-white p-6 rounded-full shadow-sm mb-6 relative group cursor-pointer" onclick="toggleForm(true)">
+                            <i data-lucide="search" class="w-10 h-10 text-indigo-300 group-hover:text-indigo-500 transition-colors"></i>
+                            <div class="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-bounce">START HERE</div>
+                        </div>
+                        <h3 class="text-2xl font-bold text-indigo-900 mb-2">Find the Perfect Gift</h3>
+                        <p class="text-indigo-600/70 max-w-sm text-lg">Tell us who they are, what they love, and we'll handle the rest.</p>
+                    </div>
+
+                    <div id="results-container" class="hidden space-y-6 animate-fade-in pb-20">
+                        <div class="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-100 sticky top-20 z-10">
+                            <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">Top Picks</h3>
+                            <div class="flex gap-2">
+                                <button id="poll-share-btn" onclick="sharePoll()" class="hidden text-sm font-bold bg-purple-600 text-white hover:bg-purple-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                    <i data-lucide="share-2" class="w-3 h-3"></i> Share Poll
+                                </button>
+                                <button onclick="generateGifts()" class="text-sm font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                    <i data-lucide="sparkles" class="w-4 h-4"></i> Regenerate
+                                </button>
+                            </div>
+                        </div>
+                        <div id="gift-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-studio" class="view-section hidden">
+            <div class="flex flex-col lg:flex-row gap-8 items-start">
+                <div class="w-full lg:w-1/3 bg-white rounded-2xl shadow-xl border border-indigo-50 overflow-hidden sticky top-24">
+                    <div class="bg-purple-600 px-6 py-4">
+                        <h2 class="text-white font-bold text-lg flex items-center gap-2">
+                            <i data-lucide="edit-3" class="w-5 h-5"></i> Design Studio
+                        </h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
+                            <button onclick="setStudioType('card')" id="studio-btn-card" class="flex flex-col items-center justify-center py-3 rounded-md text-xs font-medium transition-all bg-white text-purple-600 shadow-sm">
+                                <i data-lucide="mail" class="w-5 h-5 mb-1"></i> Card
+                            </button>
+                            <button onclick="setStudioType('link')" id="studio-btn-link" class="flex flex-col items-center justify-center py-3 rounded-md text-xs font-medium transition-all text-slate-500 hover:text-slate-700">
+                                <i data-lucide="link" class="w-5 h-5 mb-1"></i> Wrap Link
+                            </button>
+                            <button onclick="setStudioType('poem')" id="studio-btn-poem" class="flex flex-col items-center justify-center py-3 rounded-md text-xs font-medium transition-all text-slate-500 hover:text-slate-700">
+                                <i data-lucide="feather" class="w-5 h-5 mb-1"></i> Poem
+                            </button>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Recipient</label>
+                                <input id="studio-recipient" oninput="updateStudio()" placeholder="Name" class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none">
+                            </div>
+
+                            <div id="studio-style-section" class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Style</label>
+                                <div id="card-design-grid" class="grid grid-cols-4 gap-2">
+                                </div>
+                            </div>
+
+                            <div id="studio-font-section" class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Font</label>
+                                <select id="studio-font" onchange="updateStudio()" class="w-full px-3 py-3 rounded-lg border border-slate-200 text-sm">
+                                </select>
+                            </div>
+
+                            <div id="studio-poem-type-section" class="space-y-1.5 hidden">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Poem Type</label>
+                                <div class="flex gap-2">
+                                    <button onclick="setPoemStyle('Haiku')" id="poem-haiku" class="px-3 py-1 text-xs rounded border bg-purple-100 border-purple-500 text-purple-700">Haiku</button>
+                                    <button onclick="setPoemStyle('Limerick')" id="poem-limerick" class="px-3 py-1 text-xs rounded border border-slate-200">Limerick</button>
+                                    <button onclick="setPoemStyle('Sonnet')" id="poem-sonnet" class="px-3 py-1 text-xs rounded border border-slate-200">Sonnet</button>
+                                </div>
+                            </div>
+
+                            <div id="studio-link-section" class="space-y-1.5 hidden">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Link to Wrap</label>
+                                <input id="studio-target-url" oninput="updateStudio()" placeholder="https://..." class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none">
+                            </div>
+
+                            <div id="studio-hint-section" class="space-y-1.5 hidden">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Hint / Clue</label>
+                                    <button onclick="generateAIMessage('linkHint')" id="ai-hint-btn" class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 flex items-center gap-1 transition-colors">
+                                        <i data-lucide="sparkles" class="w-3 h-3"></i> AI Hint
+                                    </button>
+                                </div>
+                                <input id="studio-link-hint" oninput="updateStudio()" placeholder="Listen to this..." class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none">
+                            </div>
+
+                            <div id="studio-message-section" class="space-y-1.5 pt-4 border-t border-slate-100">
+                                <div class="flex justify-between items-center">
+                                    <label id="msg-label" class="text-xs font-bold text-slate-500 uppercase tracking-wide">Message</label>
+                                    <button onclick="generateAIMessage('message')" id="ai-msg-btn" class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 flex items-center gap-1 transition-colors">
+                                        <i data-lucide="sparkles" class="w-3 h-3"></i> AI Write
+                                    </button>
+                                </div>
+                                <textarea id="studio-message" oninput="updateStudio()" placeholder="Write something nice..." class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none h-32 resize-none text-sm leading-relaxed"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="handleStudioDownload()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-sm shadow-md hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="download" class="w-4 h-4"></i> Download
+                            </button>
+                            <button onclick="handleStudioShare()" class="w-full py-4 bg-indigo-100 text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-200 transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="share-2" class="w-4 h-4"></i> Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full lg:w-2/3 bg-slate-100 rounded-3xl p-8 border-4 border-white shadow-xl min-h-[600px] flex items-center justify-center relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+                    
+                    <div id="preview-card" class="relative w-full max-w-md aspect-[3/4] bg-white shadow-2xl p-10 flex flex-col items-center text-center justify-between transition-all duration-500 border-box">
+                        <div class="mt-8"><i data-lucide="gift" id="card-icon" class="w-12 h-12 mx-auto mb-6 opacity-80"></i><h3 id="preview-recipient" class="text-5xl drop-shadow-sm leading-tight">Recipient</h3></div>
+                        <div id="preview-message" class="text-xl sm:text-2xl leading-relaxed px-4 whitespace-pre-wrap">Your message here...</div>
+                        <div id="preview-footer" class="text-xs uppercase tracking-[0.3em] opacity-60 mb-4">Sent with love</div>
+                    </div>
+
+                    <div id="preview-link-wrapper" class="text-center w-full max-w-sm perspective-1000 hidden">
+                        <div id="wrapped-box" onclick="handleUnwrap()" class="cursor-pointer group relative transition-transform duration-500 hover:scale-105">
+                            <div class="w-64 h-64 mx-auto bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl flex items-center justify-center relative border-4 border-white/20 overflow-hidden">
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="w-12 h-full bg-yellow-400 shadow-lg relative z-10"></div>
+                                    <div class="h-12 w-full bg-yellow-400 shadow-lg absolute z-10"></div>
+                                </div>
+                                <div class="relative z-20 bg-white/10 backdrop-blur-sm p-4 rounded-full border-2 border-white/30">
+                                    <i data-lucide="gift" class="w-16 h-16 text-white drop-shadow-md"></i>
+                                </div>
+                                <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                            </div>
+                            <p class="mt-8 text-xl font-bold text-slate-600 uppercase tracking-widest animate-pulse">Tap to Open</p>
+                        </div>
+
+                        <div id="revealed-content" class="bg-white p-8 rounded-3xl shadow-2xl border border-indigo-100 hidden relative max-w-sm mx-auto">
+                            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                                <i data-lucide="check" class="w-10 h-10 text-green-600"></i>
+                            </div>
+                            <h3 class="text-3xl font-extrabold text-slate-800 mb-2">Surprise!</h3>
+                            <p id="preview-hint" class="text-slate-600 mb-8 italic text-lg leading-relaxed">Hint...</p>
+                            <a id="preview-target-btn" href="#" target="_blank" class="block w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 text-lg">
+                                Open Link <i data-lucide="external-link" class="w-5 h-5"></i>
+                            </a>
+                            <button onclick="resetGift()" class="mt-6 text-slate-400 text-sm hover:text-slate-600 font-medium underline">Wrap Another Gift</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div id="view-tools" class="view-section hidden max-w-2xl mx-auto">
+            <div class="flex gap-2 mb-6">
+                <button onclick="setToolType('split')" id="btn-tool-split" class="flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-indigo-600 text-white shadow-lg">Split Bill</button>
+                <button onclick="setToolType('naughty')" id="btn-tool-naughty" class="flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-white text-slate-600">Naughty List</button>
+            </div>
+
+            <div id="tool-split" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center animate-fade-in">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="users" class="w-8 h-8 text-green-600"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Group Gift Calculator</h2>
+                <p class="text-slate-500 mb-8">Planning a big gift? Calculate how much everyone needs to pitch in.</p>
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <div class="text-left">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Total Price</label>
+                        <input type="number" id="split-amount" oninput="updateSplit()" placeholder="5000" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-lg font-bold outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="text-left">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">People</label>
+                        <div class="flex items-center gap-3">
+                            <button onclick="changePeople(-1)" class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-xl">-</button>
+                            <span id="split-people" class="text-2xl font-bold w-8 text-center">2</span>
+                            <button onclick="changePeople(1)" class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-xl">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="split-result" class="bg-green-50 p-6 rounded-xl border border-green-100 animate-fade-in hidden">
+                    <p class="text-slate-600 font-medium mb-1">Each person pays:</p>
+                    <div id="split-per-person" class="text-4xl font-extrabold text-green-600">₹0</div>
+                    <button onclick="shareSplit()" class="mt-4 text-green-700 font-bold text-sm flex items-center justify-center gap-2 hover:underline w-full">
+                        <i data-lucide="share-2" class="w-4 h-4"></i> Share Amount
+                    </button>
+                </div>
+            </div>
+
+            <div id="tool-naughty" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center animate-fade-in hidden">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="zap" class="w-8 h-8 text-red-600"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Naughty or Nice Detector</h2>
+                <p class="text-slate-500 mb-8">Enter a name and their recent behavior.</p>
+                <div class="space-y-4 mb-6">
+                    <input id="naughty-name" placeholder="Friend's Name" class="w-full px-4 py-3 rounded-lg border border-slate-200">
+                    <textarea id="naughty-behavior" placeholder="What did they do?" class="w-full px-4 py-3 rounded-lg border border-slate-200 h-24"></textarea>
+                </div>
+                <button onclick="analyzeBehavior()" id="naughty-btn" class="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-red-700 transition-all flex justify-center items-center gap-2">
+                    Judge Them
+                </button>
+                <div id="naughty-result" class="mt-8 p-6 bg-slate-50 rounded-xl border-2 border-slate-100 animate-pop-in hidden">
+                    <div id="naughty-status" class="text-4xl font-black mb-2"></div>
+                    <div id="naughty-score" class="text-xl font-bold text-slate-800 mb-2"></div>
+                    <p id="naughty-verdict" class="text-slate-600 italic"></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-profile" class="view-section hidden max-w-3xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden mb-8">
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-6 text-white flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold">My Genie Dashboard</h2>
+                        <p class="text-indigo-100 text-sm">Manage reminders</p>
+                    </div>
+                    <i data-lucide="bell" class="w-8 h-8 text-white opacity-80"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-5 h-5 text-indigo-500"></i> Upcoming Occasions
+                    </h3>
+                    <form onsubmit="addReminder(event)" class="flex gap-2 mb-6">
+                        <input name="name" placeholder="Name" required class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                        <input name="occasion" placeholder="Occasion" required class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                        <input name="date" type="date" required class="px-3 py-2 border rounded-lg text-sm">
+                        <button type="submit" class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xl">+</button>
+                    </form>
+                    <div id="reminders-list" class="space-y-3">
+                        <p class="text-slate-400 text-center py-4">No reminders set yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 z-40 md:hidden flex justify-around items-center pb-safe">
+        <button onclick="switchTab('ideas')" class="nav-btn-mobile flex flex-col items-center justify-center w-full py-3 text-indigo-600" id="nav-mobile-ideas">
+            <i data-lucide="search" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-bold">Finder</span>
+        </button>
+        <button onclick="switchTab('studio')" class="nav-btn-mobile flex flex-col items-center justify-center w-full py-3 text-slate-400" id="nav-mobile-studio">
+            <i data-lucide="pen-tool" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-bold">Create</span>
+        </button>
+        <button onclick="switchTab('tools')" class="nav-btn-mobile flex flex-col items-center justify-center w-full py-3 text-slate-400" id="nav-mobile-tools">
+            <i data-lucide="box" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-bold">Tools</span>
+        </button>
+        <button onclick="switchTab('profile')" class="nav-btn-mobile flex flex-col items-center justify-center w-full py-3 text-slate-400" id="nav-mobile-profile">
+            <i data-lucide="user" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-bold">Saved</span>
+        </button>
+    </div>
+
+    <script>
+        let state = {
+            activeTab: 'ideas',
+            mode: 'personal',
+            currency: 'INR',
+            formData: { age: '', relationship: 'Friend', budget: '1000-5000', occasion: 'Birthday', interests: '', personality: [] },
+            results: [],
+            savedGifts: [],
+            reminders: [],
+            pollSelection: [],
+            studio: { type: 'card', recipient: '', message: '', designId: 'watercolor', font: "'Caveat', cursive", targetUrl: '', linkHint: '', poemStyle: 'Haiku' },
+            tools: { split: { amount: '', people: 2 }, naughty: { name: '', behavior: '' } }
+        };
+
+        const personalityTags = ['Introvert', 'Extrovert', 'Creative', 'Analytical', 'Minimalist', 'Trendy', 'Practical', 'Emotional', 'Techie', 'Traditional', 'Foodie', 'Adventurous'];
+        
+        const cardDesigns = [
+            { id: 'simple', name: 'Clean', bg: 'bg-white', text: 'text-slate-800', border: 'border-2 border-slate-100', style: {} },
+            { id: 'watercolor', name: 'Dream', bg: 'bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100', text: 'text-slate-800', border: 'border-white', style: {} },
+            { id: 'midnight', name: 'Starry', bg: 'bg-slate-900', text: 'text-yellow-100', border: 'border-slate-800', style: { backgroundImage: 'radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '30px 30px' } },
+            { id: 'gold', name: 'Luxe', bg: 'bg-neutral-900', text: 'text-amber-300', border: 'border-4 border-amber-500', style: { boxShadow: 'inset 0 0 40px rgba(245, 158, 11, 0.2)' } },
+            { id: 'neon', name: 'Neon', bg: 'bg-black', text: 'text-green-400', border: 'border-2 border-green-500', style: { boxShadow: '0 0 15px #22c55e, inset 0 0 20px #22c55e' } },
+            { id: 'love', name: 'Love', bg: 'bg-red-50', text: 'text-red-800', border: 'border-4 border-red-200', style: { backgroundImage: 'radial-gradient(#fecaca 2px, transparent 2px)', backgroundSize: '20px 20px' } },
+            { id: 'corporate', name: 'Corp', bg: 'bg-slate-100', text: 'text-slate-900', border: 'border-l-8 border-indigo-600', style: {} },
+            { id: 'vintage', name: 'Vintage', bg: 'bg-[#fdf6e3]', text: 'text-[#5c4b37]', border: 'border-4 border-[#d2b48c]', style: { backgroundImage: 'url("https://www.transparenttextures.com/patterns/paper.png")' } }
+        ];
+
+        const fonts = [
+            { name: 'Handwritten', family: "'Caveat', cursive" },
+            { name: 'Elegant', family: "'Great Vibes', cursive" },
+            { name: 'Bold', family: "'Abril Fatface', cursive" },
+            { name: 'Modern', family: "'Montserrat', sans-serif" },
+            { name: 'Typewriter', family: "'Courier Prime', monospace" }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            lucide.createIcons();
+            initDesktopNav();
+            renderPersonalityTags();
+            updateBudgetOptions();
+            renderCardDesignOptions();
+            renderFontOptions();
+            renderReminders();
+            
+            if(APP_LOGO_URL && APP_LOGO_URL.trim() !== "") {
+                const containers = ['desktop-logo-container', 'mobile-logo-container', 'form-logo-container'];
+                
+                containers.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(!el) return;
+                    
+                    const originalContent = el.innerHTML;
+                    
+                    const img = new Image();
+                    img.src = APP_LOGO_URL;
+                    img.className = "w-full h-full object-cover rounded-full";
+                    
+                    img.onload = () => {
+                        el.innerHTML = ''; 
+                        el.classList.remove('p-2', 'p-1.5'); 
+                        el.appendChild(img);
+                    };
+                    
+                    img.onerror = () => {
+                        el.innerHTML = originalContent; 
+                        lucide.createIcons();
+                    };
+                });
+            }
+        });
+
+        function loadState() {
+            const saved = localStorage.getItem('giftGenieSaved');
+            if (saved) state.savedGifts = JSON.parse(saved);
+            const rems = localStorage.getItem('giftGenieReminders');
+            if (rems) state.reminders = JSON.parse(rems);
+        }
+
+        function initDesktopNav() {
+            const tabs = [
+                {id: 'ideas', label: 'Finder'}, {id: 'studio', label: 'Studio'}, 
+                {id: 'tools', label: 'Tools'}, {id: 'profile', label: 'My Genie'}
+            ];
+            const container = document.getElementById('desktop-nav');
+            container.innerHTML = tabs.map(t => 
+                `<button onclick="switchTab('${t.id}')" id="nav-desk-${t.id}" class="px-4 py-2 rounded-lg text-sm font-bold transition-all ${state.activeTab === t.id ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}">${t.label}</button>`
+            ).join('');
+        }
+
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+            
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`)?.classList.remove('hidden');
+
+            document.querySelectorAll('[id^="nav-desk-"]').forEach(el => {
+                el.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-800";
+            });
+            const deskBtn = document.getElementById(`nav-desk-${tabId}`);
+            if (deskBtn) deskBtn.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-white shadow-sm text-indigo-600";
+
+            document.querySelectorAll('.nav-btn-mobile').forEach(el => {
+                el.className = "flex flex-col items-center justify-center w-full py-3 text-slate-400";
+                const icon = el.querySelector('i');
+                if (icon) icon.classList.remove('fill-current', 'opacity-20');
+            });
+            const activeMobile = document.getElementById(`nav-mobile-${tabId}`);
+            if (activeMobile) {
+                activeMobile.className = "flex flex-col items-center justify-center w-full py-3 text-indigo-600";
+                const icon = activeMobile.querySelector('i');
+                if (icon) icon.classList.add('fill-current', 'opacity-20');
+            }
+            
+            lucide.createIcons();
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            const isCorp = mode === 'corporate';
+            
+            document.getElementById('form-header').className = `px-6 py-4 flex justify-between items-center transition-colors duration-500 ${isCorp ? 'bg-slate-800' : 'bg-indigo-600'}`;
+            document.getElementById('generate-btn').className = `w-full text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 ${isCorp ? 'bg-slate-900 hover:bg-slate-800' : 'bg-gradient-to-r from-indigo-600 to-purple-600'}`;
+            document.getElementById('form-title').innerText = isCorp ? 'Pro Gifting' : 'Gift Genie';
+
+            document.getElementById('mode-personal').className = `flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${!isCorp ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`;
+            document.getElementById('mode-corporate').className = `flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${isCorp ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`;
+        }
+
+        function toggleCurrency() {
+            state.currency = state.currency === 'INR' ? 'USD' : 'INR';
+            document.getElementById('currency-btn').innerText = state.currency;
+            document.querySelectorAll('#currency-btn').forEach(b => b.innerText = state.currency);
+            updateBudgetOptions();
+        }
+
+        function updateBudgetOptions() {
+            const select = document.getElementById('input-budget');
+            if (state.currency === 'INR') {
+                select.innerHTML = `<option value="0-500">Under ₹500</option><option value="500-2000" selected>₹500 - 2k</option><option value="2000-5000">₹2k - 5k</option><option value="5000-15000">₹5k - 15k</option><option value="15000+">₹15k+</option>`;
+            } else {
+                select.innerHTML = `<option value="0-25">Under $25</option><option value="25-50" selected>$25 - $50</option><option value="50-100">$50 - $100</option><option value="100-200">$100 - $200</option><option value="200+">$200+</option>`;
+            }
+        }
+
+        function renderPersonalityTags() {
+            const container = document.getElementById('personality-tags');
+            container.innerHTML = personalityTags.map(tag => 
+                `<button type="button" onclick="toggleTag('${tag}')" id="tag-${tag}" class="px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-lg border transition-all bg-white border-slate-200 text-slate-500 hover:border-slate-300">${tag}</button>`
+            ).join('');
+        }
+
+        function toggleTag(tag) {
+            const idx = state.formData.personality.indexOf(tag);
+            const btn = document.getElementById(`tag-${tag}`);
+            if (idx > -1) {
+                state.formData.personality.splice(idx, 1);
+                btn.className = "px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-lg border transition-all bg-white border-slate-200 text-slate-500 hover:border-slate-300";
+            } else {
+                state.formData.personality.push(tag);
+                btn.className = "px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-lg border transition-all bg-indigo-100 border-indigo-500 text-indigo-700";
+            }
+        }
+
+        function toggleForm(forceOpen = false) {
+            const formContainer = document.getElementById('form-container');
+            const resultArea = document.getElementById('results-area');
+            const expandBtn = document.getElementById('expand-btn');
+            const content = document.getElementById('gift-form-content');
+            
+            if(window.innerWidth < 1024 && !forceOpen) {
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    expandBtn.classList.add('hidden');
+                } else {
+                    content.style.display = 'none';
+                    expandBtn.classList.remove('hidden');
+                }
+            }
+        }
+
+        async function generateGifts() {
+            state.formData.age = document.getElementById('input-age').value || '25';
+            state.formData.relationship = document.getElementById('input-rel').value;
+            state.formData.budget = document.getElementById('input-budget').value;
+            state.formData.occasion = document.getElementById('input-occasion').value;
+            state.formData.interests = document.getElementById('input-interests').value;
+
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('results-container').classList.add('hidden');
+            document.getElementById('loader').classList.remove('hidden');
+            
+            if(window.innerWidth < 1024) {
+               document.getElementById('gift-form-content').style.display = 'none';
+               document.getElementById('expand-btn').classList.remove('hidden');
+            }
+
+            const prompt = `
+                Act as a world-class personal shopper in ${state.currency === 'INR' ? 'India' : 'the US'}. 
+                Context: User Mode: ${state.mode} (If Corporate, focus on professional/neutral gifts).
+                Recipient: ${state.formData.age} year old ${state.formData.relationship}.
+                Occasion: ${state.formData.occasion}.
+                Personality Tags: ${state.formData.personality.join(', ')}.
+                Interests: ${state.formData.interests}.
+                Budget: ${state.formData.budget} ${state.currency}.
+                
+                CRITICAL INSTRUCTION: Ensure all gift suggestions generally fall within the selected budget range.
+                Suggest 5 unique, varied gift ideas. Mix physical items, experiences, and personalized options.
+                
+                Return ONLY a valid JSON array of objects. Format:
+                {
+                    "id": "unique_string",
+                    "title": "Gift Name",
+                    "description": "Short description.",
+                    "pitch": "A 1-sentence emotional hook.",
+                    "customization": "A specific idea on how to personalize this.",
+                    "price_range": "Estimated price in ${state.currency}",
+                    "search_term": "Shopping search query",
+                    "category": "Tech/Home/Wearable/Experience"
+                }
+            `;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                
+                const data = await response.json();
+                if(data.error) throw new Error(data.error.message);
+                
+                const text = data.candidates[0].content.parts[0].text;
+                const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                state.results = JSON.parse(cleanJson);
+                
+                renderResults();
+            } catch (err) {
+                alert("The Genie is a bit overwhelmed. Please try again.");
+                console.error(err);
+            } finally {
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('results-container').classList.remove('hidden');
+                state.pollSelection = [];
+                updatePollUI();
+            }
+        }
+
+        function renderResults() {
+            const grid = document.getElementById('gift-grid');
+            grid.innerHTML = state.results.map(gift => `
+                <div class="bg-white rounded-2xl p-0 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col justify-between overflow-hidden relative" id="gift-card-${gift.id}">
+                    <div class="h-2 w-full ${state.mode === 'corporate' ? 'bg-slate-800' : 'bg-gradient-to-r from-indigo-500 to-purple-500'}"></div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex gap-2">
+                                <button onclick="togglePoll('${gift.id}')" id="poll-btn-${gift.id}" class="w-6 h-6 rounded-md flex items-center justify-center border border-slate-300 text-transparent hover:border-purple-400">
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                </button>
+                                <span class="inline-block px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-md">${gift.category}</span>
+                            </div>
+                            <button onclick="openPitchModal('${gift.id}')" class="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors">Why this?</button>
+                        </div>
+                        <h4 class="text-xl font-bold text-slate-900 mb-2 leading-tight">${gift.title}</h4>
+                        <p class="text-slate-600 text-sm mb-4 leading-relaxed line-clamp-2">${gift.description}</p>
+                        ${gift.customization ? `<div class="flex items-start gap-2 bg-amber-50/50 p-2 rounded-lg mb-4 border border-amber-100/50"><i data-lucide="edit-3" class="w-3 h-3 text-amber-500 mt-1 shrink-0"></i><p class="text-xs text-amber-800 italic">${gift.customization}</p></div>` : ''}
+                    </div>
+                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                        <span class="font-bold text-slate-900">${gift.price_range}</span>
+                        <div class="flex gap-2">
+                            <button onclick="shareItem('${gift.id}')" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+                            <a href="https://www.google.com/search?q=${encodeURIComponent(gift.search_term)}&tbm=shop" target="_blank" class="px-4 py-2 rounded-lg text-sm font-bold text-white shadow-md transition-all flex items-center gap-2 ${state.mode === 'corporate' ? 'bg-slate-800 hover:bg-slate-900' : 'bg-indigo-600 hover:bg-indigo-700'}">Buy <i data-lucide="external-link" class="w-3 h-3"></i></a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+            
+            if(window.innerWidth < 768) {
+                document.getElementById('results-container').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function togglePoll(id) {
+            if (state.pollSelection.includes(id)) {
+                state.pollSelection = state.pollSelection.filter(item => item !== id);
+            } else if (state.pollSelection.length < 3) {
+                state.pollSelection.push(id);
+            }
+            updatePollUI();
+        }
+
+        function updatePollUI() {
+            state.results.forEach(gift => {
+                const btn = document.getElementById(`poll-btn-${gift.id}`);
+                const card = document.getElementById(`gift-card-${gift.id}`);
+                if (state.pollSelection.includes(gift.id)) {
+                    btn.className = "w-6 h-6 rounded-md flex items-center justify-center border bg-purple-600 border-purple-600 text-white";
+                    card.classList.add('ring-4', 'ring-purple-100', 'border-purple-500');
+                } else {
+                    btn.className = "w-6 h-6 rounded-md flex items-center justify-center border border-slate-300 text-transparent hover:border-purple-400";
+                    card.classList.remove('ring-4', 'ring-purple-100', 'border-purple-500');
+                }
+            });
+            const shareBtn = document.getElementById('poll-share-btn');
+            if(state.pollSelection.length > 0) {
+                shareBtn.classList.remove('hidden');
+                shareBtn.innerHTML = `<i data-lucide="share-2" class="w-3 h-3"></i> Share Poll (${state.pollSelection.length})`;
+                lucide.createIcons();
+            } else {
+                shareBtn.classList.add('hidden');
+            }
+        }
+
+        function sharePoll() {
+            const selected = state.results.filter(r => state.pollSelection.includes(r.id));
+            const text = `🤔 Help me choose for ${state.formData.relationship}!\n\n` + 
+                         selected.map((g, i) => `${i+1}. ${g.title} (${g.price_range})`).join('\n') + 
+                         `\n\nReply with 1, 2, or 3!`;
+            if (navigator.share) navigator.share({ title: 'Help Me Choose', text });
+            else { navigator.clipboard.writeText(text); alert('Poll copied to clipboard!'); }
+        }
+
+        function shareItem(id) {
+            const gift = state.results.find(r => r.id === id);
+            const text = `Check out this gift: ${gift.title} - ${gift.description}`;
+            if (navigator.share) navigator.share({ title: gift.title, text });
+            else { navigator.clipboard.writeText(text); alert('Copied to clipboard!'); }
+        }
+
+        function openPitchModal(id) {
+            const gift = state.results.find(r => r.id === id);
+            document.getElementById('modal-title').innerText = gift.title;
+            document.getElementById('modal-pitch').innerText = `"${gift.pitch}"`;
+            document.getElementById('modal-customization').innerText = gift.customization;
+            document.getElementById('modal-buy-link').href = `https://www.google.com/search?q=${encodeURIComponent(gift.search_term)}&tbm=shop`;
+            
+            document.getElementById('modal-share-btn').onclick = () => shareItem(id);
+
+            document.getElementById('pitch-modal').classList.remove('hidden');
+        }
+
+        function closeModal(e) {
+            document.getElementById('pitch-modal').classList.add('hidden');
+        }
+
+        function setStudioType(type) {
+            state.studio.type = type;
+            
+            ['card', 'link', 'poem'].forEach(t => {
+                const btn = document.getElementById(`studio-btn-${t}`);
+                if (t === type) btn.className = "flex flex-col items-center justify-center py-3 rounded-md text-xs font-medium transition-all bg-white text-purple-600 shadow-sm";
+                else btn.className = "flex flex-col items-center justify-center py-3 rounded-md text-xs font-medium transition-all text-slate-500 hover:text-slate-700";
+            });
+
+            const show = (id) => document.getElementById(id).classList.remove('hidden');
+            const hide = (id) => document.getElementById(id).classList.add('hidden');
+
+            if (type === 'card' || type === 'poem') {
+                show('studio-style-section');
+                show('studio-font-section');
+                show('studio-message-section');
+                hide('studio-link-section');
+                hide('studio-hint-section');
+                document.getElementById('preview-card').classList.remove('hidden');
+                document.getElementById('preview-link-wrapper').classList.add('hidden');
+            } else {
+                hide('studio-style-section');
+                hide('studio-font-section');
+                show('studio-message-section');
+                show('studio-link-section');
+                show('studio-hint-section');
+                document.getElementById('preview-card').classList.add('hidden');
+                document.getElementById('preview-link-wrapper').classList.remove('hidden');
+            }
+
+            if (type === 'poem') {
+                show('studio-poem-type-section');
+                document.getElementById('msg-label').innerText = 'Message / Poem';
+            } else {
+                hide('studio-poem-type-section');
+                document.getElementById('msg-label').innerText = 'Message';
+            }
+            updateStudio();
+        }
+
+        function renderCardDesignOptions() {
+            const container = document.getElementById('card-design-grid');
+            container.innerHTML = cardDesigns.map(d => 
+                `<button onclick="setDesign('${d.id}')" id="design-${d.id}" class="w-full aspect-square rounded-lg border-2 overflow-hidden ${state.studio.designId === d.id ? 'border-purple-600' : 'border-slate-100'}"><div class="w-full h-full ${d.bg}" style="${convertStyle(d.style)}"></div></button>`
+            ).join('');
+        }
+
+        function convertStyle(styleObj) {
+            return Object.entries(styleObj).map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-"+m.toLowerCase())}:${v}`).join(';');
+        }
+
+        function renderFontOptions() {
+            const sel = document.getElementById('studio-font');
+            sel.innerHTML = fonts.map(f => `<option value="${f.family}">${f.name}</option>`).join('');
+        }
+
+        function setDesign(id) {
+            state.studio.designId = id;
+            renderCardDesignOptions();
+            updateStudio();
+        }
+
+        function updateStudio() {
+            state.studio.recipient = document.getElementById('studio-recipient').value;
+            state.studio.message = document.getElementById('studio-message').value;
+            state.studio.targetUrl = document.getElementById('studio-target-url').value;
+            state.studio.linkHint = document.getElementById('studio-link-hint').value;
+            state.studio.font = document.getElementById('studio-font').value;
+
+            const design = cardDesigns.find(d => d.id === state.studio.designId);
+            const cardPrev = document.getElementById('preview-card');
+            cardPrev.className = `relative w-full max-w-md aspect-[3/4] shadow-2xl p-10 flex flex-col items-center text-center justify-between transition-all duration-500 border-box ${design.bg} ${design.border}`;
+            Object.assign(cardPrev.style, design.style);
+            
+            document.getElementById('card-icon').className = `w-12 h-12 mx-auto mb-6 opacity-80 ${design.text}`;
+            const recipEl = document.getElementById('preview-recipient');
+            recipEl.className = `text-5xl drop-shadow-sm leading-tight ${design.text}`;
+            recipEl.style.fontFamily = state.studio.font.replace(/'/g, "");
+            recipEl.innerText = state.studio.recipient || 'Recipient';
+
+            const msgEl = document.getElementById('preview-message');
+            msgEl.className = `text-xl sm:text-2xl leading-relaxed px-4 whitespace-pre-wrap ${design.text}`;
+            msgEl.style.fontFamily = state.studio.font.replace(/'/g, "");
+            msgEl.innerText = `"${state.studio.message || 'Your message...'}"`;
+
+            document.getElementById('preview-footer').className = `text-xs uppercase tracking-[0.3em] opacity-60 mb-4 ${design.text}`;
+
+            document.getElementById('preview-hint').innerText = `"${state.studio.linkHint || "Hint..."}"`;
+            document.getElementById('preview-target-btn').href = state.studio.targetUrl || '#';
+        }
+
+        function setPoemStyle(style) {
+            state.studio.poemStyle = style;
+            ['Haiku', 'Limerick', 'Sonnet'].forEach(s => {
+                const btn = document.getElementById(`poem-${s.toLowerCase()}`);
+                if (s === style) btn.className = "px-3 py-1 text-xs rounded border bg-purple-100 border-purple-500 text-purple-700";
+                else btn.className = "px-3 py-1 text-xs rounded border border-slate-200";
+            });
+        }
+
+        async function generateAIMessage(target) {
+            const btnId = target === 'linkHint' ? 'ai-hint-btn' : 'ai-msg-btn';
+            const btn = document.getElementById(btnId);
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Writing...`;
+            btn.disabled = true;
+
+            let prompt = "";
+            if (target === 'linkHint') prompt = `Write a short, mysterious hint for a digital gift for ${state.studio.recipient}. Max 10 words.`;
+            else if (state.studio.type === 'poem') prompt = `Write a creative ${state.studio.poemStyle} poem for ${state.studio.recipient} about ${state.formData.interests || 'general things'}.`;
+            else prompt = `Write a short, heartwarming card message for ${state.studio.recipient}. Max 25 words.`;
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await res.json();
+                let text = data.candidates[0].content.parts[0].text.trim();
+                
+                if (target === 'linkHint') document.getElementById('studio-link-hint').value = text;
+                else document.getElementById('studio-message').value = text;
+                
+                updateStudio();
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+        function handleUnwrap() {
+            const box = document.getElementById('wrapped-box');
+            box.classList.add('animate-shake');
+            setTimeout(() => {
+                box.classList.remove('animate-shake');
+                box.parentElement.classList.add('hidden');
+                document.getElementById('revealed-content').classList.remove('hidden');
+            }, 800);
+        }
+
+        function resetGift() {
+            document.getElementById('wrapped-box').parentElement.classList.remove('hidden');
+            document.getElementById('revealed-content').classList.add('hidden');
+        }
+
+        function handleStudioDownload() {
+            const design = cardDesigns.find(d => d.id === state.studio.designId);
+            const htmlContent = `
+                <!DOCTYPE html><html><head><title>Gift for ${state.studio.recipient}</title>
+                <script src="https://cdn.tailwindcss.com"><\/script></head>
+                <body class="bg-gray-100 flex items-center justify-center h-screen">
+                    <div class="p-10 text-center ${design ? design.bg : 'bg-white'}">
+                        <h1 class="text-4xl font-bold">${state.studio.recipient}</h1>
+                        <p class="text-xl mt-4">${state.studio.message}</p>
+                    </div>
+                </body></html>`;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'gift.html';
+            link.click();
+        }
+
+        function handleStudioShare() {
+            const text = state.studio.type === 'card' 
+                ? `💌 Card for ${state.studio.recipient}: "${state.studio.message}"` 
+                : `🎁 Surprise for ${state.studio.recipient}: ${state.studio.targetUrl}`;
+            if(navigator.share) navigator.share({title: 'Gift', text});
+            else { navigator.clipboard.writeText(text); alert('Copied text!'); }
+        }
+
+        function updateSplit() {
+            const amount = parseFloat(document.getElementById('split-amount').value) || 0;
+            const perPerson = (amount / state.tools.split.people).toFixed(0);
+            document.getElementById('split-per-person').innerText = `${state.currency === 'INR' ? '₹' : '$'}${perPerson}`;
+            
+            const resDiv = document.getElementById('split-result');
+            if (amount > 0) resDiv.classList.remove('hidden');
+            else resDiv.classList.add('hidden');
+        }
+
+        function changePeople(delta) {
+            state.tools.split.people = Math.max(2, state.tools.split.people + delta);
+            document.getElementById('split-people').innerText = state.tools.split.people;
+            updateSplit();
+        }
+
+        function shareSplit() {
+            const amount = document.getElementById('split-amount').value;
+            const perPerson = document.getElementById('split-per-person').innerText;
+            const text = `🎁 Group Gift: Total ${amount}, Split by ${state.tools.split.people} people = ${perPerson} each.`;
+            if(navigator.share) navigator.share({title: 'Split', text});
+            else { navigator.clipboard.writeText(text); alert('Copied!'); }
+        }
+
+        function setToolType(type) {
+            const splitBtn = document.getElementById('btn-tool-split');
+            const naughtyBtn = document.getElementById('btn-tool-naughty');
+            const splitView = document.getElementById('tool-split');
+            const naughtyView = document.getElementById('tool-naughty');
+
+            if(type === 'split') {
+                splitBtn.className = "flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-indigo-600 text-white shadow-lg";
+                naughtyBtn.className = "flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-white text-slate-600";
+                splitView.classList.remove('hidden');
+                naughtyView.classList.add('hidden');
+            } else {
+                splitBtn.className = "flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-white text-slate-600";
+                naughtyBtn.className = "flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-red-600 text-white shadow-lg";
+                splitView.classList.add('hidden');
+                naughtyView.classList.remove('hidden');
+            }
+        }
+
+        async function analyzeBehavior() {
+            const name = document.getElementById('naughty-name').value;
+            const behavior = document.getElementById('naughty-behavior').value;
+            const btn = document.getElementById('naughty-btn');
+            
+            if(!name || !behavior) return;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Judging...`;
+            lucide.createIcons();
+
+            const prompt = `Act as Santa's elf. Analyze behavior: "${behavior}" for ${name}. Return JSON: {"status": "Naughty/Nice", "score": "XX%", "verdict": "Funny verdict"}`;
+            
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await res.json();
+                const jsonStr = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const result = JSON.parse(jsonStr);
+
+                document.getElementById('naughty-status').innerText = result.status.toUpperCase();
+                document.getElementById('naughty-status').className = `text-4xl font-black mb-2 ${result.status === 'Nice' ? 'text-green-600' : 'text-red-600'}`;
+                document.getElementById('naughty-score').innerText = result.score;
+                document.getElementById('naughty-verdict').innerText = `"${result.verdict}"`;
+                document.getElementById('naughty-result').classList.remove('hidden');
+            } catch (e) { console.error(e); } 
+            finally { 
+                btn.innerText = 'Judge Them'; 
+            }
+        }
+
+        function renderReminders() {
+            const list = document.getElementById('reminders-list');
+            if (state.reminders.length === 0) {
+                list.innerHTML = '<p class="text-slate-400 text-center py-4">No reminders set yet.</p>';
+                return;
+            }
+            list.innerHTML = state.reminders.map(r => {
+                const daysLeft = Math.ceil((new Date(r.date) - new Date()) / (1000 * 60 * 60 * 24));
+                return `
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <div>
+                        <h4 class="font-bold text-slate-800">${r.name}'s ${r.occasion}</h4>
+                        <p class="text-xs font-bold ${daysLeft < 7 ? 'text-red-500' : 'text-slate-500'}">
+                            ${daysLeft < 0 ? 'Passed' : daysLeft === 0 ? 'Today!' : `${daysLeft} days left`} (${new Date(r.date).toLocaleDateString()})
+                        </p>
+                    </div>
+                    <button onclick="deleteReminder(${r.id})" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function addReminder(e) {
+            e.preventDefault();
+            const inputs = e.target.elements;
+            const newR = {
+                id: Date.now(),
+                name: inputs.name.value,
+                occasion: inputs.occasion.value,
+                date: inputs.date.value
+            };
+            state.reminders.push(newR);
+            state.reminders.sort((a,b) => new Date(a.date) - new Date(b.date));
+            localStorage.setItem('giftGenieReminders', JSON.stringify(state.reminders));
+            renderReminders();
+            e.target.reset();
+        }
+
+        function deleteReminder(id) {
+            state.reminders = state.reminders.filter(r => r.id !== id);
+            localStorage.setItem('giftGenieReminders', JSON.stringify(state.reminders));
+            renderReminders();
+        }
+
+    </script>
+</body>
+</html>
