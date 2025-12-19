@@ -34,7 +34,7 @@
 
     <script>
         const APP_LOGO_URL = "photo/logo.png"; 
-        const API_KEY = "file:///Users/vivek/Desktop/Giftgenie/photo/logo.png"; 
+        
     </script>
 
     <div id="pitch-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in hidden" onclick="closeModal(event)">
@@ -875,39 +875,47 @@
             });
         }
 
-        async function generateAIMessage(target) {
-            const btnId = target === 'linkHint' ? 'ai-hint-btn' : 'ai-msg-btn';
-            const btn = document.getElementById(btnId);
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Writing...`;
-            btn.disabled = true;
+ async function generateAIMessage(target) {
+  const btnId = target === 'linkHint' ? 'ai-hint-btn' : 'ai-msg-btn';
+  const btn = document.getElementById(btnId);
+  const originalContent = btn.innerHTML;
 
-            let prompt = "";
-            if (target === 'linkHint') prompt = `Write a short, mysterious hint for a digital gift for ${state.studio.recipient}. Max 10 words.`;
-            else if (state.studio.type === 'poem') prompt = `Write a creative ${state.studio.poemStyle} poem for ${state.studio.recipient} about ${state.formData.interests || 'general things'}.`;
-            else prompt = `Write a short, heartwarming card message for ${state.studio.recipient}. Max 25 words.`;
+  btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Writing...`;
+  btn.disabled = true;
 
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                const data = await res.json();
-                let text = data.candidates[0].content.parts[0].text.trim();
-                
-                if (target === 'linkHint') document.getElementById('studio-link-hint').value = text;
-                else document.getElementById('studio-message').value = text;
-                
-                updateStudio();
-            } catch (e) {
-                console.error(e);
-            } finally {
-                btn.innerHTML = originalContent;
-                btn.disabled = false;
-                lucide.createIcons();
-            }
-        }
+  let prompt = "";
+  if (target === 'linkHint')
+    prompt = `Write a short, mysterious hint for a digital gift for ${state.studio.recipient}. Max 10 words.`;
+  else if (state.studio.type === 'poem')
+    prompt = `Write a creative ${state.studio.poemStyle} poem for ${state.studio.recipient}.`;
+  else
+    prompt = `Write a short, heartwarming card message for ${state.studio.recipient}. Max 25 words.`;
+
+  try {
+    const res = await fetch("https://giftgenie-backend.vercel.app/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt })
+    });
+
+    const data = await res.json();
+    const text = data.text;
+
+    if (target === 'linkHint')
+      document.getElementById('studio-link-hint').value = text;
+    else
+      document.getElementById('studio-message').value = text;
+
+  } catch (err) {
+    console.error(err);
+    alert("AI failed. Try again.");
+  } finally {
+    btn.innerHTML = originalContent;
+    btn.disabled = false;
+    lucide.createIcons();
+  }
+}
+
 
         function handleUnwrap() {
             const box = document.getElementById('wrapped-box');
