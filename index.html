@@ -1197,59 +1197,47 @@
             }
         }
 
-        async function analyzeBehavior() {
-            const name = document.getElementById('naughty-name').value;
-            const behavior = document.getElementById('naughty-behavior').value;
-            const btn = document.getElementById('naughty-btn');
+      async function generateAIMessage(target) {
+  const btnId = target === 'linkHint' ? 'ai-hint-btn' : 'ai-msg-btn';
+  const btn = document.getElementById(btnId);
+  const originalContent = btn.innerHTML;
 
-            if (!name || !behavior) return;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Judging...`;
-            lucide.createIcons();
+  btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Writing...`;
+  btn.disabled = true;
 
-            const prompt = `Act as Santa's elf. Analyze behavior: "${behavior}" for ${name}. Return JSON: {"status": "Naughty/Nice", "score": "XX%", "verdict": "Funny verdict"}`;
+  let prompt = "";
+  if (target === 'linkHint')
+    prompt = `Write a short, mysterious hint for a digital gift for ${state.studio.recipient}. Max 10 words.`;
+  else if (state.studio.type === 'poem')
+    prompt = `Write a creative ${state.studio.poemStyle} poem for ${state.studio.recipient}.`;
+  else
+    prompt = `Write a short, heartwarming card message for ${state.studio.recipient}. Max 25 words.`;
 
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                const data = await res.json();
-                const jsonStr = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
-                const result = JSON.parse(jsonStr);
+  try {
+    const res = await fetch("https://giftgenie-backend.vercel.app/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt })
+    });
 
-                document.getElementById('naughty-status').innerText = result.status.toUpperCase();
-                document.getElementById('naughty-status').className = `text-4xl font-black mb-2 ${result.status === 'Nice' ? 'text-green-600' : 'text-red-600'}`;
-                document.getElementById('naughty-score').innerText = result.score;
-                document.getElementById('naughty-verdict').innerText = `"${result.verdict}"`;
-                document.getElementById('naughty-result').classList.remove('hidden');
-            } catch (e) { console.error(e); }
-            finally {
-                btn.innerText = 'Judge Them';
-            }
-        }
+    const data = await res.json();
+    const text = data.text;
 
-        function renderReminders() {
-            const list = document.getElementById('reminders-list');
-            if (state.reminders.length === 0) {
-                list.innerHTML = '<p class="text-slate-400 text-center py-4">No reminders set yet.</p>';
-                return;
-            }
-            list.innerHTML = state.reminders.map(r => {
-                const daysLeft = Math.ceil((new Date(r.date) - new Date()) / (1000 * 60 * 60 * 24));
-                return `
-                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <div>
-                        <h4 class="font-bold text-slate-800">${r.name}'s ${r.occasion}</h4>
-                        <p class="text-xs font-bold ${daysLeft < 7 ? 'text-red-500' : 'text-slate-500'}">
-                            ${daysLeft < 0 ? 'Passed' : daysLeft === 0 ? 'Today!' : `${daysLeft} days left`} (${new Date(r.date).toLocaleDateString()})
-                        </p>
-                    </div>
-                    <button onclick="deleteReminder(${r.id})" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>`;
-            }).join('');
-            lucide.createIcons();
-        }
+    if (target === 'linkHint')
+      document.getElementById('studio-link-hint').value = text;
+    else
+      document.getElementById('studio-message').value = text;
+
+  } catch (err) {
+    console.error(err);
+    alert("AI failed. Try again.");
+  } finally {
+    btn.innerHTML = originalContent;
+    btn.disabled = false;
+    lucide.createIcons();
+  }
+}
+
 
         function addReminder(e) {
             e.preventDefault();
