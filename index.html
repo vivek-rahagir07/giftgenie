@@ -1088,14 +1088,18 @@
                 prompt = `Write a short, heartwarming card message for ${state.studio.recipient}. Max 25 words.`;
 
             try {
-                const res = await fetch("https://giftgenie-backend.vercel.app/api/generate", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt })
-                });
+                const res = await fetch(
+  "https://giftgenie-backend.vercel.app/api/generate",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt })
+  }
+);
 
-                const data = await res.json();
-                const text = data.text;
+const data = await res.json();
+console.log(data.text);
+
 
                 if (target === 'linkHint')
                     document.getElementById('studio-link-hint').value = text;
